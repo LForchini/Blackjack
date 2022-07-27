@@ -27,7 +27,6 @@ enum Value {
 }
 
 enum BlackjackResult {
-    DealerBust,
     Winners(Vec<Player>),
 }
 
@@ -209,6 +208,8 @@ fn blackjack(num_players: i32) -> BlackjackResult {
     dealer.draw_from(&mut deck, true);
 
     // Player draw card logic
+    println!("{}", dealer);
+
     let term = console::Term::stdout();
 
     for player in &mut players {
@@ -245,28 +246,40 @@ fn blackjack(num_players: i32) -> BlackjackResult {
     }
 
     if dealer.get_sum() > 21 {
-        BlackjackResult::DealerBust
-    } else {
-        let winners = players
-            .into_iter()
-            .filter(|p: &Player| p.get_sum() <= 21 && p.get_sum() > dealer.get_sum())
-            .collect();
-
-        BlackjackResult::Winners(winners)
+        println!("Dealer went bust");
     }
+
+    let winners = players
+        .into_iter()
+        .filter(|p: &Player| {
+            p.get_sum() <= 21 && (p.get_sum() > dealer.get_sum() || dealer.get_sum() > 21)
+        })
+        .collect();
+
+    BlackjackResult::Winners(winners)
 }
 
 fn main() {
-    match blackjack(2) {
-        BlackjackResult::DealerBust => {
-            println!("Dealer went bust, all won")
-        }
-        BlackjackResult::Winners(winners) => {
-            if winners.is_empty() {
-                println!("No one won")
-            } else {
-                println!("Winners: {:#?}", winners)
+    loop {
+        let term = console::Term::stdout();
+        term.clear_screen().unwrap();
+
+        match blackjack(1) {
+            BlackjackResult::Winners(winners) => {
+                if winners.is_empty() {
+                    println!("No one won")
+                } else {
+                    println!("Winners: {:#?}", winners)
+                }
             }
+        }
+
+        println!("Any key to start again, [Q]uit");
+        let c = term.read_char().unwrap();
+
+        match c {
+            'Q' | 'q' => break,
+            _ => {}
         }
     }
 }
