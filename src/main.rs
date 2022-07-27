@@ -26,8 +26,11 @@ enum Value {
     King,
 }
 
-enum BlackjackResult {
-    Winners(Vec<Player>),
+#[derive(Debug)]
+struct BlackjackResult {
+    won: Vec<Player>,
+    tied: Vec<Player>,
+    lost: Vec<Player>,
 }
 
 struct Card {
@@ -176,6 +179,11 @@ impl std::fmt::Display for Player {
         )
     }
 }
+impl std::cmp::PartialEq for Player {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
 
 fn blackjack(num_players: i32) -> BlackjackResult {
     if num_players < 1 {
@@ -225,12 +233,15 @@ fn blackjack(num_players: i32) -> BlackjackResult {
                     match player.get_sum().cmp(&21) {
                         std::cmp::Ordering::Greater => {
                             println!("{}", player);
-                            println!("Bust");
+                            println!("Bust! Press any key to continue");
+                            term.read_char().unwrap();
                             break;
                         }
 
                         std::cmp::Ordering::Equal => {
                             println!("{}", player);
+                            println!("21! Press any key to continue");
+                            term.read_char().unwrap();
                             break;
                         }
 
@@ -258,15 +269,24 @@ fn blackjack(num_players: i32) -> BlackjackResult {
         println!("Dealer went bust");
     }
 
-    let winners = players
-        .into_iter()
-        .filter(|p: &Player| {
-            (p.get_sum() == 21 && p.cards.len() == 2)
-                || (p.get_sum() <= 21 && (p.get_sum() > dealer.get_sum() || dealer.get_sum() > 21))
-        })
-        .collect();
+    let mut won = Vec::new();
+    let mut tied = Vec::new();
+    let mut lost = Vec::new();
 
-    BlackjackResult::Winners(winners)
+    for player in players {
+        if (player.get_sum() == 21 && player.cards.len() == 2)
+            || (player.get_sum() <= 21
+                && (player.get_sum() > dealer.get_sum() || dealer.get_sum() > 21))
+        {
+            won.push(player);
+        } else if player.get_sum() == dealer.get_sum() && player.get_sum() < 21 {
+            tied.push(player);
+        } else {
+            lost.push(player);
+        }
+    }
+
+    BlackjackResult { won, tied, lost }
 }
 
 fn main() {
@@ -274,15 +294,9 @@ fn main() {
         let term = console::Term::stdout();
         term.clear_screen().unwrap();
 
-        match blackjack(1) {
-            BlackjackResult::Winners(winners) => {
-                if winners.is_empty() {
-                    println!("No one won")
-                } else {
-                    println!("Winners: {:#?}", winners)
-                }
-            }
-        }
+        let results = blackjack(1);
+
+        println!("{:#?}", results);
 
         println!("Any key to start again, [Q]uit");
         let c = term.read_char().unwrap();
