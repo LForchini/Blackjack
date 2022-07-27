@@ -222,10 +222,19 @@ fn blackjack(num_players: i32) -> BlackjackResult {
                 'H' | 'h' => {
                     player.draw_from(&mut deck, true);
 
-                    if player.get_sum() > 21 {
-                        println!("{}", player);
-                        println!("Bust");
-                        break;
+                    match player.get_sum().cmp(&21) {
+                        std::cmp::Ordering::Greater => {
+                            println!("{}", player);
+                            println!("Bust");
+                            break;
+                        }
+
+                        std::cmp::Ordering::Equal => {
+                            println!("{}", player);
+                            break;
+                        }
+
+                        _ => {}
                     }
                 }
                 'S' | 's' => break,
@@ -252,7 +261,8 @@ fn blackjack(num_players: i32) -> BlackjackResult {
     let winners = players
         .into_iter()
         .filter(|p: &Player| {
-            p.get_sum() <= 21 && (p.get_sum() > dealer.get_sum() || dealer.get_sum() > 21)
+            (p.get_sum() == 21 && p.cards.len() == 2)
+                || (p.get_sum() <= 21 && (p.get_sum() > dealer.get_sum() || dealer.get_sum() > 21))
         })
         .collect();
 
